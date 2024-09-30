@@ -62,7 +62,7 @@ class _KuliDashboardState extends State<KuliDashboard> {
       case 2:
         return const FeedbackPage();
       case 3:
-        return const Profile(); 
+        return  const ProfilePage(); 
       default:
         return Container();
     }

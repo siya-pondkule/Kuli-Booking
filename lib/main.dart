@@ -3,8 +3,8 @@ import 'pages/loading.dart';
 import 'pages/kuli_login.dart';
 import 'pages/forgot_password.dart'; // Import the Forgot Password page
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
 
+// Firebase configuration details
 const firebaseConfig = {
   "apiKey": "AIzaSyAABLBBksiKmh72rBTBEzL0Qh1_RD3NUD8",
   "authDomain": "book-my-coolie-82e3c.firebaseapp.com",
@@ -18,7 +18,7 @@ const firebaseConfig = {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase using the options from the firebase_options.dart
+  // Initialize Firebase using the configuration options
   await Firebase.initializeApp(
     options: FirebaseOptions(
       apiKey: firebaseConfig["apiKey"]!,
@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const LoadingPage(),
         '/kuli_login': (context) => const KuliLogin(),
-        '/forgot_password': (context) => const ForgotPasswordPage(), // Add the Forgot Password route
+        '/forgot_password': (context) => const ForgotPasswordPage(), // Forgot Password route
       },
     );
   }

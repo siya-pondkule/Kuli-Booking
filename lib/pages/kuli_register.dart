@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart'; // To check if running on web
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Firestore
@@ -17,6 +16,8 @@ class KuliRegister extends StatefulWidget {
 
 class _KuliRegisterState extends State<KuliRegister> {
   final _formKey = GlobalKey<FormState>();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -28,13 +29,28 @@ class _KuliRegisterState extends State<KuliRegister> {
   final TextEditingController _stationIdController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
 
-  File? _selectedImage; 
+  File? _selectedImage;
   Uint8List? _selectedImageBytes;
-  String? _profileImageUrl; // Store the image URL after upload
+
+  // Use a late variable to hold the context safely
+  late BuildContext _snackBarContext;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Save the context for future use
+    _snackBarContext = context;
+  }
+
+  void _showSnackBar(String message) {
+    final snackBar = SnackBar(content: Text(message));
+    ScaffoldMessenger.of(_snackBarContext).showSnackBar(snackBar);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(title: const Text('Register')),
       body: Center(
         child: Padding(
@@ -75,8 +91,8 @@ class _KuliRegisterState extends State<KuliRegister> {
                   if (_selectedImage != null || _selectedImageBytes != null)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 10.0),
-                      child: kIsWeb 
-                          ? Image.memory(_selectedImageBytes!, height: 150) 
+                      child: kIsWeb
+                          ? Image.memory(_selectedImageBytes!, height: 150)
                           : Image.file(_selectedImage!, height: 150),
                     ),
                   const SizedBox(height: 20),
@@ -96,7 +112,7 @@ class _KuliRegisterState extends State<KuliRegister> {
       keyboardType: inputType,
       obscureText: obscureText,
       validator: (value) {
-        if (value == null || value.isEmpty) {
+        if ((value ?? '').isEmpty) {
           return 'Please enter $label';
         }
         return null;
@@ -113,38 +129,54 @@ class _KuliRegisterState extends State<KuliRegister> {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
-      if (kIsWeb) {
-        // For web, read as bytes
-        Uint8List imageBytes = await image.readAsBytes();
-        setState(() {
-          _selectedImageBytes = imageBytes;
-        });
+      // Check file size (Optional: 5 MB limit)
+      const int maxFileSizeInBytes = 5 * 1024 * 1024; // 5 MB limit
+      final fileSize = await image.length();
+
+      if (fileSize > maxFileSizeInBytes) {
+        _showSnackBar('File is too large. Please select a file smaller than 5 MB.');
+        return;
+      }
+
+      // Check if the selected file is either a .jpg or .png
+      if (image.name.endsWith('.jpg') || image.name.endsWith('.png')) {
+        if (kIsWeb) {
+          Uint8List imageBytes = await image.readAsBytes();
+          setState(() {
+            _selectedImageBytes = imageBytes;
+            _selectedImage = null; // Reset the file for web
+          });
+        } else {
+          setState(() {
+            _selectedImage = File(image.path);
+            _selectedImageBytes = null; // Reset the bytes for mobile
+          });
+        }
       } else {
-        // For mobile, use a file
-        setState(() {
-          _selectedImage = File(image.path);
-        });
+        _showSnackBar('Please select a JPG or PNG image.');
       }
     }
   }
 
   Future<String> _uploadImageToStorage(String userId) async {
+    if (_selectedImageBytes == null && _selectedImage == null) {
+      throw Exception('No image selected for upload');
+    }
+
     try {
-      final Reference storageRef = FirebaseStorage.instance.ref().child('kuli_images/$userId.jpg');
-      
+      final Reference storageRef = FirebaseStorage.instance.ref().child('kuli/$userId.jpg');
+
       if (kIsWeb && _selectedImageBytes != null) {
-        // For web, upload using putData
         await storageRef.putData(_selectedImageBytes!);
       } else if (_selectedImage != null) {
-        // For mobile, upload the file directly
         await storageRef.putFile(_selectedImage!);
       }
 
-      // Get the download URL
-      return await storageRef.getDownloadURL();
+      String downloadUrl = await storageRef.getDownloadURL();
+      print("Image uploaded, URL: $downloadUrl");
+      return downloadUrl;      // Return the download URL
     } catch (e) {
-      print('Image upload failed: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Image upload failed: $e')));
+      _showSnackBar('Image upload failed: $e');
       return '';
     }
   }
@@ -152,42 +184,48 @@ class _KuliRegisterState extends State<KuliRegister> {
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       try {
-        // Create user with email and password
         UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
 
-        // Get the user ID of the newly created user
         String userId = userCredential.user!.uid;
+        print("User created with ID: $userId");
 
-        // Upload the profile image and get the URL
-        _profileImageUrl = await _uploadImageToStorage(userId);
+        // Validate Date of Birth
+        DateTime? dob;
+        try {
+          dob = DateTime.parse(_dobController.text.trim());
+        } catch (e) {
+          _showSnackBar("Invalid Date Format. Please use YYYY-MM-DD.");
+          return;
+        }
 
-        // Create a map of the Kuli data
+        // Upload image and get URL
+        String profileImageUrl = await _uploadImageToStorage(userId);
+        print("Profile image uploaded: $profileImageUrl");
+
+        // Prepare data for Firestore
         Map<String, dynamic> kuliData = {
           'name': _nameController.text.trim(),
           'email': _emailController.text.trim(),
           'phone': _phoneController.text.trim(),
           'address': _addressController.text.trim(),
           'experience': _experienceController.text.trim(),
-          'dob': DateTime.parse(_dobController.text.trim()), // Ensure correct format
+          'dob': Timestamp.fromDate(dob),
           'station': _stationController.text.trim(),
           'stationId': _stationIdController.text.trim(),
-          'age': int.parse(_ageController.text.trim()), // Parse age as int
-          'profileImage': _profileImageUrl, // Add image URL
+          'age': int.tryParse(_ageController.text.trim()) ?? 0,
+          'profileImage': profileImageUrl,
         };
 
-        print("Attempting to save Kuli data to Firestore...");
-        // Save Kuli data in Firestore
         await FirebaseFirestore.instance.collection('kuli').doc(userId).set(kuliData);
-        print("Kuli data saved successfully!");
+        print("Kuli data saved to Firestore");
 
-        // Navigate to the login screen upon successful registration
+        // Navigate to login screen
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const KuliLogin()));
       } catch (e) {
-        print('Registration failed: $e');
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Registration failed: $e')));
+        _showSnackBar('Registration failed: $e');
       }
     }
   }
