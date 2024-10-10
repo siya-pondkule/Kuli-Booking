@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'pages/loading.dart';
 import 'pages/kuli_login.dart';
-import 'pages/forgot_password.dart'; // Import the Forgot Password page
-import 'package:firebase_core/firebase_core.dart';
+import 'pages/forgot_password.dart';
 
 // Firebase configuration details
 const firebaseConfig = {
@@ -15,10 +16,15 @@ const firebaseConfig = {
   "measurementId": "G-305ZHE7MN9"
 };
 
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Handle background messages here
+  print('Handling a background message: ${message.messageId}');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Firebase using the configuration options
+
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: FirebaseOptions(
       apiKey: firebaseConfig["apiKey"]!,
@@ -30,6 +36,18 @@ void main() async {
       measurementId: firebaseConfig["measurementId"]!,
     ),
   );
+
+  // Set up Firebase Messaging
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+  // Request permission for iOS
+  NotificationSettings settings = await messaging.requestPermission();
+  if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+    print('User granted permission');
+  } else if (settings.authorizationStatus == AuthorizationStatus.denied) {
+    print('User denied permission');
+  }
 
   runApp(const MyApp());
 }
@@ -45,7 +63,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const LoadingPage(),
         '/kuli_login': (context) => const KuliLogin(),
-        '/forgot_password': (context) => const ForgotPasswordPage(), // Forgot Password route
+        '/forgot_password': (context) => const ForgotPasswordPage(),
       },
     );
   }

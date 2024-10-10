@@ -45,16 +45,17 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
   void _resetPassword() async {
     if (_newPasswordController.text == _confirmPasswordController.text) {
-      // Update the user's password using Firebase Auth
       try {
         User? user = FirebaseAuth.instance.currentUser;
         await user!.updatePassword(_newPasswordController.text);
-        Navigator.popUntil(context, (route) => route.isFirst); // Go back to the login page
+        Navigator.popUntil(context, (route) => route.isFirst); // Go back
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error resetting password: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Error resetting password: $e')));
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Passwords do not match')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Passwords do not match')));
     }
   }
 }

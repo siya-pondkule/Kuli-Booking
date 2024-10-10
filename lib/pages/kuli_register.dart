@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart'; // To check if running on web
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Firestore
 import 'package:firebase_storage/firebase_storage.dart'; // Firebase Storage
 import 'kuli_login.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // FontAwesome for Icons
 
 class KuliRegister extends StatefulWidget {
   const KuliRegister({super.key});
@@ -32,13 +34,11 @@ class _KuliRegisterState extends State<KuliRegister> {
   File? _selectedImage;
   Uint8List? _selectedImageBytes;
 
-  // Use a late variable to hold the context safely
   late BuildContext _snackBarContext;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Save the context for future use
     _snackBarContext = context;
   }
 
@@ -51,7 +51,10 @@ class _KuliRegisterState extends State<KuliRegister> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      appBar: AppBar(title: const Text('Register')),
+      appBar: AppBar(
+        title: const Text('Register'),
+        backgroundColor: Colors.redAccent, // Make the AppBar red
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -66,27 +69,33 @@ class _KuliRegisterState extends State<KuliRegister> {
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.redAccent),
                   ),
                   const SizedBox(height: 20),
-                  _buildTextField(_nameController, 'Name', TextInputType.name),
+                  _buildTextField(_nameController, 'Name', TextInputType.name, FontAwesomeIcons.user),
                   const SizedBox(height: 10),
-                  _buildTextField(_emailController, 'Email', TextInputType.emailAddress),
+                  _buildTextField(_emailController, 'Email', TextInputType.emailAddress, FontAwesomeIcons.envelope),
                   const SizedBox(height: 10),
-                  _buildTextField(_passwordController, 'Password', TextInputType.visiblePassword, obscureText: true),
+                  _buildTextField(_passwordController, 'Password', TextInputType.visiblePassword, FontAwesomeIcons.lock, obscureText: true),
                   const SizedBox(height: 10),
-                  _buildTextField(_phoneController, 'Phone', TextInputType.phone),
+                  _buildTextField(_phoneController, 'Phone', TextInputType.phone, FontAwesomeIcons.phone),
                   const SizedBox(height: 10),
-                  _buildTextField(_addressController, 'Address', TextInputType.text),
+                  _buildTextField(_addressController, 'Address', TextInputType.text, FontAwesomeIcons.addressBook),
                   const SizedBox(height: 10),
-                  _buildTextField(_experienceController, 'Experience', TextInputType.text),
+                  _buildTextField(_experienceController, 'Experience', TextInputType.text, FontAwesomeIcons.briefcase),
                   const SizedBox(height: 10),
-                  _buildTextField(_dobController, 'Date of Birth (YYYY-MM-DD)', TextInputType.datetime),
+                  _buildTextField(_dobController, 'Date of Birth (YYYY-MM-DD)', TextInputType.datetime, FontAwesomeIcons.calendar),
                   const SizedBox(height: 10),
-                  _buildTextField(_stationController, 'Station', TextInputType.text),
+                  _buildTextField(_stationController, 'Station', TextInputType.text, FontAwesomeIcons.train),
                   const SizedBox(height: 10),
-                  _buildTextField(_stationIdController, 'Station ID', TextInputType.text),
+                  _buildTextField(_stationIdController, 'Station ID', TextInputType.text, FontAwesomeIcons.idCard),
                   const SizedBox(height: 10),
-                  _buildTextField(_ageController, 'Age', TextInputType.number),
+                  _buildTextField(_ageController, 'Age', TextInputType.number, FontAwesomeIcons.hashtag),
                   const SizedBox(height: 10),
-                  ElevatedButton(onPressed: _uploadImage, child: const Text('Upload photo of Kuli')),
+                  ElevatedButton(
+                    onPressed: _uploadImage,
+                    child: const Text('Upload photo of Kuli'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent, // Make button red
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   if (_selectedImage != null || _selectedImageBytes != null)
                     Padding(
@@ -96,7 +105,13 @@ class _KuliRegisterState extends State<KuliRegister> {
                           : Image.file(_selectedImage!, height: 150),
                     ),
                   const SizedBox(height: 20),
-                  ElevatedButton(onPressed: _register, child: const Text('Register')),
+                  ElevatedButton(
+                    onPressed: _register,
+                    child: const Text('Register'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent, // Make button red
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -106,7 +121,7 @@ class _KuliRegisterState extends State<KuliRegister> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, TextInputType inputType, {bool obscureText = false}) {
+  Widget _buildTextField(TextEditingController controller, String label, TextInputType inputType, IconData icon, {bool obscureText = false}) {
     return TextFormField(
       controller: controller,
       keyboardType: inputType,
@@ -119,7 +134,19 @@ class _KuliRegisterState extends State<KuliRegister> {
       },
       decoration: InputDecoration(
         labelText: label,
-        border: const OutlineInputBorder(),
+        prefixIcon: Icon(icon, color: Colors.redAccent),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: const BorderSide(color: Colors.redAccent),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: const BorderSide(color: Colors.redAccent), // Red border when not focused
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: const BorderSide(color: Colors.red, width: 2.0), // Red border when focused
+        ),
       ),
     );
   }
@@ -129,7 +156,6 @@ class _KuliRegisterState extends State<KuliRegister> {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
-      // Check file size (Optional: 5 MB limit)
       const int maxFileSizeInBytes = 5 * 1024 * 1024; // 5 MB limit
       final fileSize = await image.length();
 
@@ -138,18 +164,17 @@ class _KuliRegisterState extends State<KuliRegister> {
         return;
       }
 
-      // Check if the selected file is either a .jpg or .png
       if (image.name.endsWith('.jpg') || image.name.endsWith('.png')) {
         if (kIsWeb) {
           Uint8List imageBytes = await image.readAsBytes();
           setState(() {
             _selectedImageBytes = imageBytes;
-            _selectedImage = null; // Reset the file for web
+            _selectedImage = null;
           });
         } else {
           setState(() {
             _selectedImage = File(image.path);
-            _selectedImageBytes = null; // Reset the bytes for mobile
+            _selectedImageBytes = null;
           });
         }
       } else {
@@ -158,13 +183,13 @@ class _KuliRegisterState extends State<KuliRegister> {
     }
   }
 
-  Future<String> _uploadImageToStorage(String userId) async {
+  Future<String> _uploadImageToStorage(String kuliId) async {
     if (_selectedImageBytes == null && _selectedImage == null) {
       throw Exception('No image selected for upload');
     }
 
     try {
-      final Reference storageRef = FirebaseStorage.instance.ref().child('kuli/$userId.jpg');
+      final Reference storageRef = FirebaseStorage.instance.ref().child('kuli/$kuliId.jpg');
 
       if (kIsWeb && _selectedImageBytes != null) {
         await storageRef.putData(_selectedImageBytes!);
@@ -172,60 +197,55 @@ class _KuliRegisterState extends State<KuliRegister> {
         await storageRef.putFile(_selectedImage!);
       }
 
-      String downloadUrl = await storageRef.getDownloadURL();
-      print("Image uploaded, URL: $downloadUrl");
-      return downloadUrl;      // Return the download URL
+      final String downloadUrl = await storageRef.getDownloadURL();
+      return downloadUrl;
     } catch (e) {
-      _showSnackBar('Image upload failed: $e');
-      return '';
+      print('Error uploading image: $e');
+      rethrow;
     }
   }
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       try {
-        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        // Create the user using email and password
+        final UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
 
-        String userId = userCredential.user!.uid;
-        print("User created with ID: $userId");
+        // Use the user ID as the document ID
+        String kuliId = userCredential.user!.uid;
 
-        // Validate Date of Birth
-        DateTime? dob;
-        try {
-          dob = DateTime.parse(_dobController.text.trim());
-        } catch (e) {
-          _showSnackBar("Invalid Date Format. Please use YYYY-MM-DD.");
-          return;
-        }
+        // Log the Kuli ID for debugging
+        print('Kuli ID: $kuliId');
 
-        // Upload image and get URL
-        String profileImageUrl = await _uploadImageToStorage(userId);
-        print("Profile image uploaded: $profileImageUrl");
+        // Upload the image and get the URL
+        String imageUrl = await _uploadImageToStorage(kuliId);
 
-        // Prepare data for Firestore
-        Map<String, dynamic> kuliData = {
-          'name': _nameController.text.trim(),
-          'email': _emailController.text.trim(),
-          'phone': _phoneController.text.trim(),
-          'address': _addressController.text.trim(),
-          'experience': _experienceController.text.trim(),
-          'dob': Timestamp.fromDate(dob),
-          'station': _stationController.text.trim(),
-          'stationId': _stationIdController.text.trim(),
-          'age': int.tryParse(_ageController.text.trim()) ?? 0,
-          'profileImage': profileImageUrl,
-        };
+        // Store the user data in Firestore with kuliId
+        await FirebaseFirestore.instance.collection('kuli').doc(kuliId).set({
+          'kuliId': kuliId,  // Add the kuliId field here
+          'name': _nameController.text,
+          'email': _emailController.text,
+          'phone': _phoneController.text,
+          'address': _addressController.text,
+          'experience': _experienceController.text,
+          'dob': Timestamp.fromDate(DateTime.parse(_dobController.text)), // Use Timestamp for the date
+          'station': _stationController.text,
+          'stationId': _stationIdController.text,
+          'age': int.tryParse(_ageController.text), // Convert age to integer
+          'imageUrl': imageUrl,
+        });
 
-        await FirebaseFirestore.instance.collection('kuli').doc(userId).set(kuliData);
-        print("Kuli data saved to Firestore");
-
-        // Navigate to login screen
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const KuliLogin()));
+        _showSnackBar('Registration successful!');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const KuliLogin()),
+        );
       } catch (e) {
-        _showSnackBar('Registration failed: $e');
+        print('Error during registration: $e');
+        _showSnackBar('Registration failed: ${e.toString()}');
       }
     }
   }

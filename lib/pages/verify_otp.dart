@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'reset_password.dart'; // Import the Reset Password page
+import 'reset_password.dart';
 
 class VerifyOtpPage extends StatefulWidget {
   final String verificationId;
@@ -53,10 +53,12 @@ class _VerifyOtpPageState extends State<VerifyOtpPage> {
           MaterialPageRoute(builder: (context) => const ResetPasswordPage()),
         );
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invalid OTP: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Invalid OTP: $e')));
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter the OTP')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter the OTP')));
     }
   }
 }

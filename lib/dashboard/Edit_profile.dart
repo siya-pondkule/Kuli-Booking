@@ -69,25 +69,36 @@ class _EditProfileState extends State<EditProfile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Profile')),
+      appBar: AppBar(title: const Text('Edit Profile'), backgroundColor: Colors.redAccent),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildTextField(_nameController, 'Name'),
-                _buildTextField(_emailController, 'Email'),
-                _buildTextField(_phoneController, 'Phone'),
-                _buildTextField(_addressController, 'Address'),
-                _buildTextField(_experienceController, 'Experience'),
-                _buildTextField(_dobController, 'Date of Birth (YYYY-MM-DD)'),
-                _buildTextField(_stationController, 'Station'),
-                _buildTextField(_stationIdController, 'Station ID'),
-                _buildTextField(_ageController, 'Age'),
+                _buildTextField(_nameController, 'Name', Icons.person),
+                _buildTextField(_emailController, 'Email', Icons.email),
+                _buildTextField(_phoneController, 'Phone', Icons.phone),
+                _buildTextField(_addressController, 'Address', Icons.home),
+                _buildTextField(_experienceController, 'Experience', Icons.work),
+                _buildTextField(_dobController, 'Date of Birth (YYYY-MM-DD)', Icons.calendar_today),
+                _buildTextField(_stationController, 'Station', Icons.location_city),
+                _buildTextField(_stationIdController, 'Station ID', Icons.card_membership),
+                _buildTextField(_ageController, 'Age', Icons.cake),
                 const SizedBox(height: 20),
-                ElevatedButton(onPressed: _updateProfile, child: const Text('Update')),
+                ElevatedButton(
+                  onPressed: _updateProfile,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    backgroundColor: Colors.redAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text('Update', style: TextStyle(fontSize: 18)),
+                ),
               ],
             ),
           ),
@@ -96,18 +107,33 @@ class _EditProfileState extends State<EditProfile> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label) {
-    return TextFormField(
-      controller: controller,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please enter $label';
-        }
-        return null;
-      },
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: TextFormField(
+        controller: controller,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter $label';
+          }
+          return null;
+        },
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: Colors.redAccent),
+          border: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(10)),
+            borderSide: BorderSide(),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(10)),
+            borderSide: BorderSide(color: Colors.redAccent),
+          ),
+          enabledBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(10)),
+            borderSide: BorderSide(color: Colors.grey),
+          ),
+        ),
       ),
     );
   }
